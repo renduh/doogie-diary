@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Doogie Diary</title>
+<meta name="description" content="A retro 80s terminal-style diary inspired by Doogie Howser. Write, edit, save, export and relive your thoughts in glowing green text.">
+<!-- Open Graph (Facebook, LinkedIn, Discord, etc.) -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Doogie Diary">
+<meta property="og:description" content="A retro 80s terminal-style diary inspired by Doogie Howser.">
+<meta property="og:image" content="https://yourdomain.com/social-card.png">
+<meta property="og:url" content="https://yourdomain.com/">
+<meta property="og:site_name" content="Doogie Diary">
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Doogie Diary">
+<meta name="twitter:description" content="A retro 80s terminal-style diary inspired by Doogie Howser.">
+<meta name="twitter:image" content="https://yourdomain.com/social-card.png">
+<!-- Favicon -->
+<link rel="icon" type="image/png" sizes="32x32" href="img/favicon.png">
+<link rel="icon" type="image/png" sizes="16x16" href="img/favicon.png">
+<link rel="apple-touch-icon" href="img/favicon.png">
+
+<style>
+body {
+    margin: 0;
+    font-family: "Courier New", monospace;
+    background: linear-gradient(180deg, #3b5edb 0%, #2e4fc9 100%);
+    color: #e6f0ff;
+    min-height: 100vh;
+    text-shadow: 0 0 4px rgba(255,255,255,0.25);
+}
+
+.top-line {
+    height: 3px;
+    background: #c43a3a;
+    margin-top: 30px;
+}
+
+header {
+    position: relative;
+    text-align: center;
+    margin-top: -16px;
+}
+
+.title-bar {
+    display: inline-block;
+    background: #79d6e3;
+    color: #003f44;
+    padding: 4px 20px;
+    font-size: 14px;
+    letter-spacing: 2px;
+    box-shadow: 4px 4px 0px #002b33;
+}
+
+.header-buttons {
+    position: absolute;
+    right: 40px;
+    top: 0;
+    display: flex;
+    gap: 8px;
+}
+
+.header-buttons button,
+.modal-btn {
+    background: #79d6e3;
+    border: none;
+    padding: 4px 10px;
+    font-family: inherit;
+    font-size: 12px;
+    box-shadow: 3px 3px 0px #002b33;
+    cursor: pointer;
+}
+
+.reset-btn {
+    background: #c43a3a !important;
+    color: white;
+}
+
+main {
+    max-width: 650px;
+    margin: 80px auto;
+    padding: 0 20px;
+}
+
+.entry {
+    margin-bottom: 60px;
+    position: relative;
+}
+
+.entry-title {
+    color: #ffe86e;
+    text-decoration: underline;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+.entry-content {
+    line-height: 1.8;
+    white-space: pre-wrap;
+}
+
+.divider {
+    margin: 30px 0;
+    border-top: 1px dashed #9cc3ff;
+}
+
+.entry-actions {
+    position: absolute;
+    right: 0;
+    top: 0;
+}
+
+.entry-actions button {
+    background: #79d6e3;
+    border: none;
+    font-family: inherit;
+    font-size: 12px;
+    padding: 2px 6px;
+    margin-left: 5px;
+    cursor: pointer;
+    box-shadow: 2px 2px 0px #002b33;
+}
+
+.editor-modal,
+.dialog-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: none;
+    justify-content: center;
+    align-items: center;
+}
+
+.editor-box,
+.dialog-box {
+    background: #2e4fc9;
+    padding: 20px;
+    width: 600px;
+    box-shadow: 8px 8px 0px #001a66;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+textarea, input[type="text"] {
+    background: #1d38a8;
+    color: white;
+    border: none;
+    padding: 10px;
+    font-family: inherit;
+    outline: none;
+}
+
+textarea {
+    height: 200px;
+    resize: none;
+}
+
+.save-btn {
+    background: #79d6e3;
+    border: none;
+    padding: 6px;
+    font-family: inherit;
+    cursor: pointer;
+    box-shadow: 4px 4px 0px #002b33;
+}
+
+.dialog-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+</style>
+</head>
+<body>
+
+<div class="top-line"></div>
+
+<header>
+    <div class="title-bar">
+        PERSONAL RECORDS OF 
+        <span contenteditable="true" id="name">DOOGIE HOWSER</span>
+    </div>
+
+    <div class="header-buttons">
+        <button id="addBtn">ADD</button>
+        <button id="exportBtn">EXPORT</button>
+        <button id="importBtn">IMPORT</button>
+        <button id="resetBtn" class="reset-btn">RESET</button>
+        <input type="file" id="importFile" accept=".json" hidden>
+    </div>
+</header>
+
+<main id="entries"></main>
+
+<!-- Entry Editor -->
+<div class="editor-modal" id="editorModal">
+    <div class="editor-box">
+        <input type="text" id="entryTitle">
+        <textarea id="entryContent"></textarea>
+        <button class="save-btn" id="saveBtn">SAVE</button>
+    </div>
+</div>
+
+<!-- Custom Dialog -->
+<div class="dialog-overlay" id="dialog">
+    <div class="dialog-box">
+        <div id="dialogMessage"></div>
+        <div class="dialog-buttons" id="dialogButtons"></div>
+    </div>
+</div>
+
+<script>
+let diary = { name: "DOOGIE HOWSER", entries: [] };
+let editingIndex = null;
+const STORAGE_KEY = "doogieDiary";
+
+const entriesContainer = document.getElementById("entries");
+const modal = document.getElementById("editorModal");
+const nameField = document.getElementById("name");
+const importFile = document.getElementById("importFile");
+
+const dialog = document.getElementById("dialog");
+const dialogMessage = document.getElementById("dialogMessage");
+const dialogButtons = document.getElementById("dialogButtons");
+
+/* ---------- Date Formatter ---------- */
+
+function formatDateTime(date = new Date()) {
+    const day = date.getDate();
+    const month = date.toLocaleString("en-GB", { month: "long" });
+    const year = date.getFullYear();
+
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+
+    return `${day} ${month} ${year} at ${hours}:${minutes}`;
+}
+
+/* ---------- Custom Dialog System ---------- */
+
+function showAlert(message) {
+    dialogMessage.textContent = message;
+    dialogButtons.innerHTML = "";
+    const btn = document.createElement("button");
+    btn.textContent = "OK";
+    btn.className = "modal-btn";
+    btn.onclick = () => dialog.style.display = "none";
+    dialogButtons.appendChild(btn);
+    dialog.style.display = "flex";
+}
+
+function showConfirm(message, callback) {
+    dialogMessage.textContent = message;
+    dialogButtons.innerHTML = "";
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.textContent = "CANCEL";
+    cancelBtn.className = "modal-btn";
+    cancelBtn.onclick = () => {
+        dialog.style.display = "none";
+        callback(false);
+    };
+
+    const yesBtn = document.createElement("button");
+    yesBtn.textContent = "YES";
+    yesBtn.className = "modal-btn";
+    yesBtn.onclick = () => {
+        dialog.style.display = "none";
+        callback(true);
+    };
+
+    dialogButtons.appendChild(cancelBtn);
+    dialogButtons.appendChild(yesBtn);
+    dialog.style.display = "flex";
+}
+
+/* ---------- Default Entry ---------- */
+
+function createDefaultEntry() {
+    return {
+        title: "15 October 1989 at 22:42",
+        content: `Welcome to your digital diary.
+
+Click ADD to create entries.
+EDIT to modify them.
+DELETE to remove them.
+EXPORT saves to a file.
+IMPORT restores a saved diary.
+RESET clears everything and starts fresh.
+
+Everything auto-saves in your browser.`
+    };
+}
+
+/* ---------- Storage ---------- */
+
+function loadDiary() {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+        diary = JSON.parse(saved);
+    } else {
+        diary.entries = [createDefaultEntry()];
+        saveDiary();
+    }
+    nameField.textContent = diary.name;
+    renderEntries();
+}
+
+function saveDiary() {
+    diary.name = nameField.textContent.trim() || "UNKNOWN";
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(diary));
+}
+
+/* ---------- Rendering ---------- */
+
+function renderEntries() {
+    entriesContainer.innerHTML = "";
+
+    diary.entries.slice().reverse().forEach((entry, i) => {
+        const actualIndex = diary.entries.length - 1 - i;
+
+        const div = document.createElement("div");
+        div.className = "entry";
+        div.dataset.index = actualIndex;
+
+        div.innerHTML = `
+            <div class="entry-actions">
+                <button class="edit-btn">EDIT</button>
+                <button class="delete-btn">DELETE</button>
+            </div>
+            <div class="entry-title">${entry.title}</div>
+            <div class="entry-content">${entry.content}</div>
+            <div class="divider"></div>
+        `;
+
+        entriesContainer.appendChild(div);
+    });
+}
+
+/* ---------- Reset ---------- */
+
+document.getElementById("resetBtn").addEventListener("click", () => {
+    showConfirm("Delete ALL entries and start fresh?", confirmed => {
+        if (!confirmed) return;
+
+        diary = {
+            name: nameField.textContent.trim() || "DOOGIE HOWSER",
+            entries: [createDefaultEntry()]
+        };
+
+        saveDiary();
+        renderEntries();
+        showAlert("Diary reset successfully.");
+    });
+});
+
+/* ---------- Entry Actions ---------- */
+
+document.getElementById("addBtn").addEventListener("click", () => {
+    editingIndex = null;
+    entryTitle.value = formatDateTime() + " | ";
+    entryContent.value = "";
+    modal.style.display = "flex";
+});
+
+document.getElementById("saveBtn").addEventListener("click", () => {
+    const title = entryTitle.value.trim();
+    const content = entryContent.value.trim();
+    if (!content) {
+        showAlert("Entry cannot be empty.");
+        return;
+    }
+
+    if (editingIndex !== null) {
+        diary.entries[editingIndex] = { title, content };
+    } else {
+        diary.entries.push({ title, content });
+    }
+
+    saveDiary();
+    modal.style.display = "none";
+    renderEntries();
+});
+
+entriesContainer.addEventListener("click", e => {
+    const entryDiv = e.target.closest(".entry");
+    if (!entryDiv) return;
+
+    const index = Number(entryDiv.dataset.index);
+
+    if (e.target.classList.contains("edit-btn")) {
+        editingIndex = index;
+        entryTitle.value = diary.entries[index].title;
+        entryContent.value = diary.entries[index].content;
+        modal.style.display = "flex";
+    }
+
+    if (e.target.classList.contains("delete-btn")) {
+        showConfirm("Delete this entry?", confirmed => {
+            if (!confirmed) return;
+            diary.entries.splice(index, 1);
+            saveDiary();
+            renderEntries();
+        });
+    }
+});
+
+/* ---------- Export / Import ---------- */
+
+document.getElementById("exportBtn").addEventListener("click", () => {
+    saveDiary();
+    const blob = new Blob([JSON.stringify(diary, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "doogie-diary.json";
+    a.click();
+    URL.revokeObjectURL(url);
+    showAlert("Diary exported successfully.");
+});
+
+document.getElementById("importBtn").addEventListener("click", () => {
+    importFile.value = "";
+    importFile.click();
+});
+
+importFile.addEventListener("change", e => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = event => {
+        try {
+            const imported = JSON.parse(event.target.result);
+
+            if (!imported.name || !Array.isArray(imported.entries)) {
+                showAlert("Invalid diary file format.");
+                return;
+            }
+
+            showConfirm("Replace current diary with imported one?", confirmed => {
+                if (!confirmed) return;
+                diary = imported;
+                nameField.textContent = diary.name;
+                saveDiary();
+                renderEntries();
+                showAlert("Diary imported successfully.");
+            });
+
+        } catch {
+            showAlert("Invalid JSON file.");
+        }
+    };
+
+    reader.readAsText(file);
+});
+
+modal.addEventListener("click", e => {
+    if (e.target === modal) modal.style.display = "none";
+});
+
+loadDiary();
+</script>
+
+</body>
+</html>
