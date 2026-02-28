@@ -26,7 +26,7 @@
 body {
     margin: 0;
     font-family: "Courier New", monospace;
-    background: linear-gradient(180deg, #3b5edb 0%, #2e4fc9 100%);
+    background: linear-gradient(180deg, #0725a0 0%, #031355 100%);
     color: #e6f0ff;
     min-height: 100vh;
     text-shadow: 0 0 4px rgba(255,255,255,0.25);
@@ -34,7 +34,7 @@ body {
 
 .top-line {
     height: 3px;
-    background: #c43a3a;
+    background: #7e1e38;
     margin-top: 30px;
 }
 
@@ -74,7 +74,7 @@ header {
 }
 
 .reset-btn {
-    background: #c43a3a !important;
+    background: #7e1e38 !important;
     color: white;
 }
 
@@ -172,6 +172,27 @@ textarea {
     justify-content: flex-end;
     gap: 10px;
 }
+
+
+
+.header-buttons {
+    top: 30px;
+}
+@media (min-width: 800px) {
+    .header-buttons {
+        top: 0;
+    }
+}
+
+.entry-actions {
+    top: -30px;
+}
+@media (min-width: 800px) {
+    .entry-actions {
+        top: 0;
+    }
+}
+
 </style>
 </head>
 <body>
